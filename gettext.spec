@@ -5,7 +5,7 @@
 Summary: GNU libraries and utilities for producing multi-lingual messages
 Name: gettext
 Version: 0.17
-Release: 16%{?dist}
+Release: 18%{?dist}
 License: GPLv3 and LGPLv2+
 Group: Development/Tools
 URL: http://www.gnu.org/software/gettext/
@@ -18,8 +18,6 @@ BuildRequires: libtool, bison, gcc-c++
 %if %{with java}
 # libintl.jar requires gcj >= 4.3 to build
 BuildRequires: gcc-java, libgcj
-# For javadoc
-BuildRequires: java-1.6.0-openjdk-devel
 %if %{with jar}
 BuildRequires: %{_bindir}/fastjar
 # require zip and unzip for brp-java-repack-jars
@@ -38,6 +36,7 @@ Patch6: gettext-0.17-autopoint-CVS-441481.patch
 Patch7: gettext-0.17-rpathFix.patch
 Patch8: gettext-xgettext-python-unicode-surrogate-473946.patch
 Patch9: gettext-0.17-long-long-int-m4.patch
+Patch10: gettext-0.17-clear-error-count.patch
 
 %description
 The GNU gettext package provides a set of tools and documentation for
@@ -85,6 +84,7 @@ This package contains libraries used internationalization support.
 %patch7 -p0 -b .rpathFix~
 %patch8 -p0 -b .unicode~
 %patch9 -p0 -b .longlong~
+%patch10 -p1 -b .clear-error-count~
 
 # necessary for autoconf >= 2.6.2:
 rm gettext-tools/gnulib-m4/openmp.m4
@@ -274,6 +274,15 @@ fi
 
 
 %changelog
+* Mon Apr 28 2014 Daiki Ueno <dueno@redhat.com> - 0.17-18
+- drop BR: java-1.6.0-openjdk-devel, because:
+  - it was only needed for javadoc, but the regeneration of javadoc
+    files is not necessary
+  - the s390/s390x buildroots are lacking the package for el6
+
+* Fri Apr 25 2014 Daiki Ueno <dueno@redhat.com> - 0.17-17
+- apply patch to clear error count before parsing (#1024681)
+
 * Fri Nov 27 2009 Jens Petersen <petersen@redhat.com> - 0.17-16
 - fix FTBFS by removing openmp.m4 which conflicts with recent autoconf (#539211)
 - cleanup gettext-0.17-rpathFix.patch
