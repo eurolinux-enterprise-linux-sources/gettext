@@ -6,7 +6,7 @@
 Summary: GNU libraries and utilities for producing multi-lingual messages
 Name: gettext
 Version: 0.18.2.1
-Release: 2%{?dist}
+Release: 4%{?dist}
 License: GPLv3+ and LGPLv2+
 Group: Development/Tools
 URL: http://www.gnu.org/software/gettext/
@@ -329,6 +329,12 @@ fi
 %{_emacs_sitelispdir}/%{name}/*.el
 
 %changelog
+* Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 0.18.2.1-4
+- Mass rebuild 2014-01-24
+
+* Fri Dec 27 2013 Daniel Mach <dmach@redhat.com> - 0.18.2.1-3
+- Mass rebuild 2013-12-27
+
 * Wed Jun 26 2013 Daiki Ueno <dueno@redhat.com> - 0.18.2.1-2
 - add a man page for msghack
 - fix bogus date in %%changelog
