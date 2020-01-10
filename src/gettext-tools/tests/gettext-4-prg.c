@@ -1,5 +1,5 @@
 /* Test program, used by the gettext-4 test.
-   Copyright (C) 2001, 2005-2006 Free Software Foundation, Inc.
+   Copyright (C) 2001, 2005-2006, 2015-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ main (int argc, char *argv[])
   xsetenv ("LC_ALL", argv[1], 1);
   setlocale (LC_ALL, "");
   textdomain ("codeset");
-  bindtextdomain ("codeset", ".");
+  bindtextdomain ("codeset", "gt-4");
 
   /* Here we expect output in ISO-8859-1.
      Except on Darwin 7 or newer and on BeOS, for which locale_charset ()

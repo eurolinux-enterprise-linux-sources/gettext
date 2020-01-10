@@ -1,5 +1,5 @@
 /* Test program, used by the gettext-5 test.
-   Copyright (C) 2005, 2007 Free Software Foundation, Inc.
+   Copyright (C) 2005, 2007, 2015-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -38,7 +38,7 @@ main (void)
   unsetenv ("LANGUAGE");
   unsetenv ("OUTPUT_CHARSET");
   textdomain ("codeset");
-  bindtextdomain ("codeset", ".");
+  bindtextdomain ("codeset", "gt-5");
 
   setlocale (LC_ALL, "de_DE.ISO-8859-1");
 

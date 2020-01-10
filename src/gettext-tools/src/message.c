@@ -1,5 +1,5 @@
 /* GNU gettext - internationalization aids
-   Copyright (C) 1995-1998, 2000-2009 Free Software Foundation, Inc.
+   Copyright (C) 1995-1998, 2000-2009, 2015-2016 Free Software Foundation, Inc.
 
    This file was written by Peter Miller <millerp@canb.auug.org.au>
 
@@ -38,6 +38,7 @@ const char *const format_language[NFORMATS] =
   /* format_objc */             "objc",
   /* format_sh */               "sh",
   /* format_python */           "python",
+  /* format_python_brace */     "python-brace",
   /* format_lisp */             "lisp",
   /* format_elisp */            "elisp",
   /* format_librep */           "librep",
@@ -57,7 +58,10 @@ const char *const format_language[NFORMATS] =
   /* format_qt */               "qt",
   /* format_qt_plursl */        "qt-plural",
   /* format_kde */              "kde",
-  /* format_boost */            "boost"
+  /* format_kde_kuit */         "kde-kuit",
+  /* format_boost */            "boost",
+  /* format_lua */              "lua",
+  /* format_javascript */       "javascript"
 };
 
 const char *const format_language_pretty[NFORMATS] =
@@ -66,6 +70,7 @@ const char *const format_language_pretty[NFORMATS] =
   /* format_objc */             "Objective C",
   /* format_sh */               "Shell",
   /* format_python */           "Python",
+  /* format_python_brace */     "Python brace",
   /* format_lisp */             "Lisp",
   /* format_elisp */            "Emacs Lisp",
   /* format_librep */           "librep",
@@ -85,7 +90,10 @@ const char *const format_language_pretty[NFORMATS] =
   /* format_qt */               "Qt",
   /* format_qt_plural */        "Qt plural",
   /* format_kde */              "KDE",
-  /* format_boost */            "Boost"
+  /* format_kde_kuit */         "KDE KUIT",
+  /* format_boost */            "Boost",
+  /* format_lua */              "Lua",
+  /* format_javascript */       "JavaScript"
 };
 
 
@@ -96,6 +104,15 @@ possible_format_p (enum is_format is_format)
          || is_format == yes_according_to_context
          || is_format == yes;
 }
+
+
+const char *const syntax_check_name[NSYNTAXCHECKS] =
+{
+  /* sc_ellipsis_unicode */     "ellipsis-unicode",
+  /* sc_space_ellipsis */       "space-ellipsis",
+  /* sc_quote_unicode */        "quote-unicode",
+  /* sc_bullet_unicode */       "bullet-unicode"
+};
 
 
 message_ty *
@@ -124,6 +141,8 @@ message_alloc (const char *msgctxt,
   mp->range.min = -1;
   mp->range.max = -1;
   mp->do_wrap = undecided;
+  for (i = 0; i < NSYNTAXCHECKS; i++)
+    mp->do_syntax_check[i] = undecided;
   mp->prev_msgctxt = NULL;
   mp->prev_msgid = NULL;
   mp->prev_msgid_plural = NULL;
@@ -229,6 +248,8 @@ message_copy (message_ty *mp)
     result->is_format[i] = mp->is_format[i];
   result->range = mp->range;
   result->do_wrap = mp->do_wrap;
+  for (i = 0; i < NSYNTAXCHECKS; i++)
+    result->do_syntax_check[i] = mp->do_syntax_check[i];
   for (j = 0; j < mp->filepos_count; ++j)
     {
       lex_pos_ty *pp = &mp->filepos[j];

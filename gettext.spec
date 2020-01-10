@@ -3,20 +3,31 @@
 %bcond_without check
 %bcond_without git
 
+%global tarversion 0.19.8.1
+%global archiveversion 0.19.8
+
 Summary: GNU libraries and utilities for producing multi-lingual messages
 Name: gettext
-Version: 0.18.2.1
-Release: 4%{?dist}
+Version: 0.19.8.1
+Release: 2%{?dist}
 License: GPLv3+ and LGPLv2+
 Group: Development/Tools
 URL: http://www.gnu.org/software/gettext/
-Source: ftp://ftp.gnu.org/gnu/gettext/%{name}-%{version}.tar.gz
+Source: ftp://ftp.gnu.org/gnu/gettext/%{name}-%{tarversion}.tar.xz
+# Disable the test_lock test as it often hangs on a number of arches
+# https://bugzilla.redhat.com/show_bug.cgi?id=1155291
+# http://savannah.gnu.org/bugs/?43487
+Patch0: disable-gettext-runtime-test-lock.patch
+# Upstreamed patch:
+# http://lists.gnu.org/archive/html/bug-gettext/2016-08/msg00006.html
+Patch1: gettext-po-send-mail.patch
 Source2: msghack.py
 Source3: msghack.1
-# removal of openmp.m4
-BuildRequires: autoconf >= 2.62
-BuildRequires: automake
-BuildRequires: libtool, bison, gcc-c++
+# for bootstrapping
+# BuildRequires: autoconf >= 2.62
+# BuildRequires: automake
+# BuildRequires: libtool, bison
+BuildRequires: gcc-c++
 %if %{with java}
 # libintl.jar requires gcj >= 4.3 to build
 BuildRequires: gcc-java, libgcj
@@ -37,13 +48,14 @@ BuildRequires: git
 BuildRequires: chrpath
 # following suggested by DEPENDENCIES:
 BuildRequires: ncurses-devel
-BuildRequires: expat-devel
 BuildRequires: libxml2-devel
 BuildRequires: glib2-devel
 BuildRequires: libcroco-devel
 BuildRequires: libunistring-devel
 Requires(post): info
 Requires(preun): info
+# Depend on the exact version of the library sub package
+Requires: %{name}-libs%{_isa} = %{version}-%{release}
 # for F17 UsrMove
 Conflicts: filesystem < 3
 Provides: /bin/gettext
@@ -86,8 +98,11 @@ Requires: %{name}-libs = %{version}-%{release}
 Requires: %{name}-common-devel = %{version}-%{release}
 Requires(post): info
 Requires(preun): info
+%if %{with git}
 # for autopoint
 Requires: git
+%endif
+Requires: xz
 Obsoletes: gettext-autopoint < 0.18.1.1-3
 Provides: gettext-autopoint = %{version}-%{release}
 
@@ -116,24 +131,15 @@ BuildArch: noarch
 # help users find po-mode.el
 Provides: emacs-po-mode
 Requires: emacs(bin) >= %{_emacs_version}
+Provides: emacs-%{name}-el = %{version}-%{release}
+Obsoletes: emacs-%{name}-el < %{version}-%{release}
 
 %description -n emacs-%{name}
 This package provides a major mode for editing po files within GNU Emacs.
 
 
-%package -n emacs-%{name}-el
-Summary: Elisp source files for editing po files within GNU Emacs
-Group: Applications/Editors
-BuildArch: noarch
-Requires: emacs-%{name} = %{version}-%{release}
-
-%description -n emacs-%{name}-el
-This package contains the Elisp source files for editing po files within GNU
-Emacs.
-
-
 %prep
-%setup -q
+%autosetup -n %{name}-%{tarversion} -S git
 
 
 %build
@@ -142,6 +148,10 @@ export JAVAC=gcj
 %if %{with jar}
 export JAR=fastjar
 %endif
+%endif
+%ifarch ppc ppc64 ppc64le
+# prevent test-isinf from failing with gcc-5.3.1 on ppc64le (#1294016)
+export CFLAGS="$RPM_OPT_FLAGS -D__SUPPORT_SNAN__"
 %endif
 # --disable-rpath doesn't work properly on lib64
 %configure --without-included-gettext --enable-nls --disable-static \
@@ -203,6 +213,9 @@ rm -f ${RPM_BUILD_ROOT}%{_datadir}/%{name}/libintl.jar
 
 rm -f ${RPM_BUILD_ROOT}%{_datadir}/%{name}/gettext.jar
 
+# own this directory for third-party *.its files
+mkdir -p $RPM_BUILD_ROOT%{_datadir}/%{name}/its
+
 # remove .la files
 rm ${RPM_BUILD_ROOT}%{_libdir}/lib*.la
 
@@ -230,7 +243,9 @@ done
 %if %{with check}
 %check
 # this takes quite a lot of time to run
-make check
+
+# override LIBUNISTRING to prevent reordering of lib objects
+make check LIBUNISTRING=-lunistring
 %endif
 
 
@@ -281,9 +296,12 @@ fi
 %exclude %{_libdir}/%{name}/gnu.gettext.*
 %endif
 %dir %{_datadir}/%{name}
+%dir %{_datadir}/%{name}/its
 %{_datadir}/%{name}/ABOUT-NLS
 %{_datadir}/%{name}/po
 %{_datadir}/%{name}/styles
+%dir %{_datadir}/%{name}-%{archiveversion}
+%{_datadir}/%{name}-%{archiveversion}/its
 
 %files common-devel
 %{_datadir}/%{name}/archive.*.tar.xz
@@ -312,8 +330,8 @@ fi
 %endif
 
 %files libs
-%{_libdir}/libasprintf.so.*
-%{_libdir}/libgettextpo.so.*
+%{_libdir}/libasprintf.so.0*
+%{_libdir}/libgettextpo.so.0*
 %{_libdir}/libgettextlib-0.*.so
 %{_libdir}/libgettextsrc-0.*.so
 %if %{with jar}
@@ -323,12 +341,18 @@ fi
 %files -n emacs-%{name}
 %dir %{_emacs_sitelispdir}/%{name}
 %{_emacs_sitelispdir}/%{name}/*.elc
+%{_emacs_sitelispdir}/%{name}/*.el
 %{_emacs_sitestartdir}/*.el
 
-%files -n emacs-%{name}-el
-%{_emacs_sitelispdir}/%{name}/*.el
-
 %changelog
+* Wed Mar 15 2017 Kalev Lember <klember@redhat.com> - 0.19.8.1-2
+- Depend on the exact version of the library sub package
+- Resolves: #1386869
+
+* Fri Feb 03 2017 Kalev Lember <klember@redhat.com> - 0.19.8.1-1
+- Update to 0.19.8.1
+- Resolves: #1386869
+
 * Fri Jan 24 2014 Daniel Mach <dmach@redhat.com> - 0.18.2.1-4
 - Mass rebuild 2014-01-24
 

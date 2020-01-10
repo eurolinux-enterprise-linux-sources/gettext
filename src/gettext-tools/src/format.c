@@ -1,5 +1,5 @@
 /* Format strings.
-   Copyright (C) 2001-2009 Free Software Foundation, Inc.
+   Copyright (C) 2001-2009, 2015-2016 Free Software Foundation, Inc.
    Written by Bruno Haible <haible@clisp.cons.org>, 2001.
 
    This program is free software: you can redistribute it and/or modify
@@ -38,6 +38,7 @@ struct formatstring_parser *formatstring_parsers[NFORMATS] =
   /* format_objc */             &formatstring_objc,
   /* format_sh */               &formatstring_sh,
   /* format_python */           &formatstring_python,
+  /* format_python_brace */     &formatstring_python_brace,
   /* format_lisp */             &formatstring_lisp,
   /* format_elisp */            &formatstring_elisp,
   /* format_librep */           &formatstring_librep,
@@ -57,7 +58,10 @@ struct formatstring_parser *formatstring_parsers[NFORMATS] =
   /* format_qt */               &formatstring_qt,
   /* format_qt_plural */        &formatstring_qt_plural,
   /* format_kde */              &formatstring_kde,
-  /* format_boost */            &formatstring_boost
+  /* format_kde_kuit */         &formatstring_kde_kuit,
+  /* format_boost */            &formatstring_boost,
+  /* format_lua */              &formatstring_lua,
+  /* format_javascript */       &formatstring_javascript
 };
 
 /* Check whether both formats strings contain compatible format

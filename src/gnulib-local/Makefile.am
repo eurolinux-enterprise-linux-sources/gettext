@@ -1,5 +1,5 @@
 ## Makefile for the gnulib-local directory of GNU gettext
-## Copyright (C) 2006-2008, 2010-2011 Free Software Foundation, Inc.
+## Copyright (C) 2006-2008, 2010-2011, 2015-2016 Free Software Foundation, Inc.
 ##
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -17,9 +17,8 @@
 ## Process this file with automake to produce Makefile.in.
 
 # Generate this list with
-# find . '(' -name CVS -o -name Makefile.am ')' -prune -o -type f '!' '(' -name '*.orig' -or -name '*~' ')' -printf '%P\n' | sort | tr '\012' @ | sed 's/@$/%/;s/@/ \\@/g' | tr @% '\012\012'
+# find . '(' -name CVS -o -name Makefile.am ')' -prune -o -type f '!' '(' -name '*.orig' -or -name '*~' -or -name 'ChangeLog.*' ')' -printf '%P\n' | sort | tr '\012' @ | sed 's/@$/%/;s/@/ \\@/g' | tr @% '\012\012'
 EXTRA_DIST = \
-ChangeLog \
 build-aux/moopp \
 lib/addext.c \
 lib/alloca.in.h \
@@ -28,14 +27,13 @@ lib/backupfile.c \
 lib/backupfile.h \
 lib/basename.c \
 lib/basename.h \
-lib/ChangeLog.0 \
-lib/ChangeLog.1 \
 lib/closeout.c \
 lib/closeout.h \
 lib/error.h.diff \
 lib/error-progname.c \
 lib/error-progname.h \
 lib/exitfail.h.diff \
+lib/execute.c.diff \
 lib/fd-ostream.oo.c \
 lib/fd-ostream.oo.h \
 lib/file-ostream.oo.c \
@@ -225,8 +223,10 @@ lib/obstack.h.diff \
 lib/ostream.oo.c \
 lib/ostream.oo.h \
 lib/progname.h.diff \
+lib/regcomp.c.diff \
 lib/regexec.c.diff \
 lib/regex_internal.h.diff \
+lib/spawn-pipe.c.diff \
 lib/styled-ostream.oo.c \
 lib/styled-ostream.oo.h \
 lib/term-ostream.oo.c \
@@ -247,11 +247,8 @@ lib/xmalloc.c \
 lib/xstrdup.c \
 m4/alloca.m4 \
 m4/backupfile.m4 \
-m4/ChangeLog.0 \
-m4/ChangeLog.1 \
 m4/curses.m4 \
 m4/gcj.m4 \
-m4/hard-locale.m4.diff \
 m4/libcroco.m4 \
 m4/libglib.m4 \
 m4/libxml.m4 \
@@ -283,7 +280,6 @@ modules/memory-ostream \
 modules/moo \
 modules/moo-tests \
 modules/ostream \
-modules/regex.diff \
 modules/styled-ostream \
 modules/termcap \
 modules/termcap-h \
@@ -297,6 +293,7 @@ modules/xalloc \
 modules/xalloc-die \
 modules/xerror \
 modules/xgetcwd \
+tests/test-environ.c.diff \
 tests/test-moo-aroot.oo.c \
 tests/test-moo-aroot.oo.h \
 tests/test-moo-assign.c \
@@ -313,6 +310,7 @@ tests/test-term-ostream-xterm \
 tests/test-term-ostream-xterm-r6.out \
 tests/test-term-ostream-xterm-xf86-v32.out \
 tests/test-term-ostream-xterm-basic.out \
+tests/test-term-ostream-xterm-basic-italic.out \
 tests/test-term-ostream-xterm-8bit.out \
 tests/test-term-ostream-xterm-linux-debian.out \
 tests/test-term-ostream-xterm-linux-mandriva.out \
@@ -325,3 +323,5 @@ tests/test-term-ostream-xterm-mingw.out \
 tests/test-term-ostream-xterm-16color.out \
 tests/test-term-ostream-xterm-88color.out \
 tests/test-term-ostream-xterm-256color.out
+
+maintainer-update-po:

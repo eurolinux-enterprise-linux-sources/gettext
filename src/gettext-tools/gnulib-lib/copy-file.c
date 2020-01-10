@@ -1,5 +1,5 @@
 /* Copying of files.
-   Copyright (C) 2001-2003, 2006-2007, 2009-2013 Free Software Foundation, Inc.
+   Copyright (C) 2001-2003, 2006-2007, 2009-2016 Free Software Foundation, Inc.
    Written by Bruno Haible <haible@clisp.cons.org>, 2001.
 
    This program is free software: you can redistribute it and/or modify
@@ -37,6 +37,7 @@
 #endif
 
 #include "error.h"
+#include "ignore-value.h"
 #include "safe-read.h"
 #include "full-write.h"
 #include "acl.h"
@@ -46,11 +47,6 @@
 #include "xalloc.h"
 
 #define _(str) gettext (str)
-
-/* The results of open() in this file are not used with fchdir,
-   therefore save some unnecessary work in fchdir.c.  */
-#undef open
-#undef close
 
 enum { IO_SIZE = 32 * 1024 };
 
@@ -105,6 +101,7 @@ qcopy_file_preserving (const char *src_filename, const char *dest_filename)
     }
 
   free (buf);
+  buf = NULL; /* To avoid double free in error case.  */
 
 #if !USE_ACL
   if (close (dest_fd) < 0)
@@ -140,7 +137,7 @@ qcopy_file_preserving (const char *src_filename, const char *dest_filename)
 
 #if HAVE_CHOWN
   /* Preserve the owner and group.  */
-  chown (dest_filename, statbuf.st_uid, statbuf.st_gid);
+  ignore_value (chown (dest_filename, statbuf.st_uid, statbuf.st_gid));
 #endif
 
   /* Preserve the access permissions.  */
@@ -178,6 +175,7 @@ qcopy_file_preserving (const char *src_filename, const char *dest_filename)
  error_src:
   close (src_fd);
  error:
+  free (buf);
   return err;
 }
 

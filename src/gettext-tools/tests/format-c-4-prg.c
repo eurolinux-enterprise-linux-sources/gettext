@@ -1,5 +1,5 @@
 /* Test program, used by the format-c-4 test.
-   Copyright (C) 2002, 2009 Free Software Foundation, Inc.
+   Copyright (C) 2002, 2009, 2015-2016 Free Software Foundation, Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ main (int argc, char *argv[])
     }
 
   textdomain ("fc4");
-  bindtextdomain ("fc4", ".");
+  bindtextdomain ("fc4", "fc4-dir");
 
   s = ngettext ("father of %"PRId8" child", "father of %"PRId8" children", n);
   c1 = "Vater von %"; c2 = " Kindern";

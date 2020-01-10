@@ -1,6 +1,7 @@
 ;;; po-mode.el -- major mode for GNU gettext PO files
 
-;; Copyright (C) 1995-1999, 2000-2002, 2005-2008, 2010 Free Software Foundation, Inc.
+;; Copyright (C) 1995-2002, 2005-2008, 2010, 2015-2016 Free Software
+;; Foundation, Inc.
 
 ;; Authors: François Pinard <pinard@iro.umontreal.ca>
 ;;          Greg McGary <gkm@magilla.cichlid.com>
@@ -62,7 +63,7 @@
 
 ;;; Code:
 
-(defconst po-mode-version-string "2.21" "\
+(defconst po-mode-version-string "2.24" "\
 Version number of this version of po-mode.el.")
 
 ;;; Emacs portability matters - part I.
@@ -128,6 +129,18 @@ Value is nil, t, or ask."
 (defcustom po-auto-select-on-unfuzzy nil
   "*Automatically select some new entry while making an entry not fuzzy."
   :type 'boolean
+  :group 'po)
+
+(defcustom po-keep-mo-file nil
+  "*Set whether MO file should be kept or discarded after validation."
+  :type 'boolean
+  :group 'po)
+
+(defcustom po-auto-update-file-header t
+  "*Automatically revise headers.  Value is nil, t, or ask."
+  :type '(choice (const nil)
+                 (const t)
+                 (const ask))
   :group 'po)
 
 (defcustom po-auto-replace-revision-date t
@@ -1057,7 +1070,7 @@ Initialize or replace current translation with the original message"))])
     ;;  '("msgctxt " "msgid " "msgid_plural " "msgstr " "msgstr[0] " "msgstr[1] "))
     ("^\\(\\(msg\\(ctxt\\|id\\(_plural\\)?\\|str\\(\\[[0-9]\\]\\)?\\)\\) \\)?\"\\|\"$"
      . font-lock-keyword-face)
-    ("\\\\.\\|%\\*?[-.0-9ul]*[a-zA-Z]" . font-lock-variable-name-face)
+    ("\\\\.\\|%[*$-.0-9hjltuzL]*[a-zA-Z]" . font-lock-variable-name-face)
     ("^# .*\\|^#[:,]?" . font-lock-comment-face)
     ("^#:\\(.*\\)" 1 font-lock-reference-face)
     ;; The following line does not work, and I wonder why.
@@ -1356,42 +1369,47 @@ Position %d/%d; %d translated, %d fuzzy, %d untranslated, %d obsolete")
 ;;; Processing the PO file header entry.
 
 (defun po-check-file-header ()
-  "Create a missing PO mode file header, or replace an oldish one."
-  (save-excursion
-    (save-restriction
-      (widen) ; in case of a narrowed view to the buffer
-      (let ((buffer-read-only po-read-only)
-            insert-flag end-of-header)
-        (goto-char (point-min))
-        (if (re-search-forward po-any-msgstr-block-regexp nil t)
-            (progn
-              ;; There is at least one entry.
-              (goto-char (match-beginning 0))
-              (forward-line -1)
-              (setq end-of-header (match-end 0))
-              (if (looking-at "msgid \"\"\n")
-                  ;; There is indeed a PO file header.
-                  (if (re-search-forward "\n\"PO-Revision-Date: "
-                                         end-of-header t)
-                      nil
-                    ;; This is an oldish header.  Replace it all.
-                    (goto-char end-of-header)
-                    (while (> (point) (point-min))
-                      (forward-line -1)
-                      (insert "#~ ")
-                      (beginning-of-line))
-                    (beginning-of-line)
-                    (setq insert-flag t))
-                ;; The first entry is not a PO file header, insert one.
-                (setq insert-flag t)))
-          ;; Not a single entry found.
-          (setq insert-flag t))
-        (goto-char (point-min))
-        (if insert-flag
-            (progn
-              (insert po-default-file-header)
-              (if (not (eobp))
-                  (insert "\n"))))))))
+  "Create a missing PO mode file header, or replace an oldish one.
+Can be customized with the `po-auto-update-file-header' variable."
+  (if (or (eq po-auto-update-file-header t)
+          (and (eq po-auto-update-file-header 'ask)
+               (y-or-n-p (_"May I update the PO Header Entry? "))))
+      (save-excursion
+        (save-restriction
+          (widen) ; in case of a narrowed view to the buffer
+          (let ((buffer-read-only po-read-only)
+                insert-flag end-of-header)
+            (goto-char (point-min))
+            (if (re-search-forward po-any-msgstr-block-regexp nil t)
+                (progn
+                  ;; There is at least one entry.
+                  (goto-char (match-beginning 0))
+                  (forward-line -1)
+                  (setq end-of-header (match-end 0))
+                  (if (looking-at "msgid \"\"\n")
+                      ;; There is indeed a PO file header.
+                      (if (re-search-forward "\n\"PO-Revision-Date: "
+                                             end-of-header t)
+                          nil
+                        ;; This is an oldish header.  Replace it all.
+                        (goto-char end-of-header)
+                        (while (> (point) (point-min))
+                          (forward-line -1)
+                          (insert "#~ ")
+                          (beginning-of-line))
+                        (beginning-of-line)
+                        (setq insert-flag t))
+                    ;; The first entry is not a PO file header, insert one.
+                    (setq insert-flag t)))
+              ;; Not a single entry found.
+              (setq insert-flag t))
+            (goto-char (point-min))
+            (if insert-flag
+                (progn
+                  (insert po-default-file-header)
+                  (if (not (eobp))
+                      (insert "\n")))))))
+    (message (_"PO Header Entry was not updated..."))))
 
 (defun po-replace-revision-date ()
   "Replace the revision date by current time in the PO file header."
@@ -3333,20 +3351,25 @@ Leave point after marked string."
 (defun po-validate ()
   "Use 'msgfmt' for validating the current PO file contents."
   (interactive)
-  ; The 'compile' subsystem is autoloaded through a call to (compile ...).
-  ; We need to initialize it outside of any binding. Without this statement,
-  ; all defcustoms and defvars of compile.el would be undone when the let*
-  ; terminates.
+  ;; The 'compile' subsystem is autoloaded through a call to (compile ...).
+  ;; We need to initialize it outside of any binding. Without this statement,
+  ;; all defcustoms and defvars of compile.el would be undone when the let*
+  ;; terminates.
   (require 'compile)
   (let* ((dev-null
           (cond ((boundp 'null-device) null-device) ; since Emacs 20.3
                 ((memq system-type '(windows-nt windows-95)) "NUL")
                 (t "/dev/null")))
+         (output
+          (if po-keep-mo-file
+              (concat (file-name-sans-extension buffer-file-name) ".mo")
+            dev-null))
          (compilation-buffer-name-function
           (function (lambda (mode-name)
                       (concat "*" mode-name " validation*"))))
          (compile-command (concat po-msgfmt-program
-                                  " --statistics -c -v -o " dev-null " "
+                                  " --statistics -c -v -o "
+                                  (shell-quote-argument output) " "
                                   (shell-quote-argument buffer-file-name))))
     (po-msgfmt-version-check)
     (compile compile-command)))
@@ -3367,10 +3390,11 @@ Leave point after marked string."
         (file-error nil))
 
       ;; Make sure there's a version number in the output:
-      ;; 0.11 or 0.10.36 or 0.11-pre1 or 0.16.2-pre1
+      ;; 0.11 or 0.10.36 or 0.19.5.1 or 0.11-pre1 or 0.16.2-pre1
       (progn (goto-char (point-min))
              (or (looking-at ".* \\([0-9]+\\)\\.\\([0-9]+\\)$")
                  (looking-at ".* \\([0-9]+\\)\\.\\([0-9]+\\)\\.\\([0-9]+\\)$")
+                 (looking-at ".* \\([0-9]+\\)\\.\\([0-9]+\\)\\.\\([0-9]+\\)\\.\\([0-9]+\\)$")
                  (looking-at ".* \\([0-9]+\\)\\.\\([0-9]+\\)[-_A-Za-z0-9]+$")
                  (looking-at ".* \\([0-9]+\\)\\.\\([0-9]+\\)\\.\\([0-9]+\\)[-_A-Za-z0-9]+$")))
 
@@ -3497,7 +3521,7 @@ Write to your team?  ('n' if writing to the Translation Project robot) ")))
               (insert-buffer-substring buffer)
               (shell-command-on-region
                (region-beginning) (region-end)
-               (concat po-gzip-uuencode-command " " name ".gz") t))))))
+               (concat po-gzip-uuencode-command " " name ".gz") t t))))))
   (message ""))
 
 (defun po-confirm-and-quit ()

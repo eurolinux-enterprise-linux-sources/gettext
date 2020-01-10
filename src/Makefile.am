@@ -1,5 +1,5 @@
 ## Makefile for the toplevel directory of GNU gettext
-## Copyright (C) 1995-1999, 2000-2012 Free Software Foundation, Inc.
+## Copyright (C) 1995-2016 Free Software Foundation, Inc.
 ##
 ## This program is free software: you can redistribute it and/or modify
 ## it under the terms of the GNU General Public License as published by
@@ -17,14 +17,42 @@
 ## Process this file with automake to produce Makefile.in.
 
 AUTOMAKE_OPTIONS = 1.5 gnu no-dependencies
-ACLOCAL = build-aux/fixaclocal @ACLOCAL@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = gnulib-local gettext-runtime gettext-tools
 
+changelog_etc = \
+  gettext-runtime/ChangeLog.0 \
+  gettext-runtime/doc/ChangeLog.0 \
+  gettext-runtime/intl-csharp/ChangeLog.0 \
+  gettext-runtime/intl-java/ChangeLog.0 \
+  gettext-runtime/libasprintf/ChangeLog.0 \
+  gettext-runtime/m4/ChangeLog.0 \
+  gettext-runtime/man/ChangeLog.0 \
+  gettext-runtime/src/ChangeLog.0 \
+  gettext-runtime/tests/ChangeLog.0 \
+  gettext-tools/ChangeLog.0 \
+  gettext-tools/doc/ChangeLog.0 \
+  gettext-tools/doc/ChangeLog.1 \
+  gettext-tools/examples/ChangeLog.0 \
+  gettext-tools/gnulib-tests/ChangeLog.0 \
+  gettext-tools/libgettextpo/ChangeLog.0 \
+  gettext-tools/libgrep/ChangeLog.0 \
+  gettext-tools/m4/ChangeLog.0 \
+  gettext-tools/man/ChangeLog.0 \
+  gettext-tools/man/ChangeLog.1 \
+  gettext-tools/misc/ChangeLog.0 \
+  gettext-tools/projects/ChangeLog.0 \
+  gettext-tools/src/ChangeLog.0 \
+  gettext-tools/src/ChangeLog.1 \
+  gettext-tools/styles/ChangeLog.0 \
+  gettext-tools/tests/ChangeLog.0 \
+  gettext-tools/tests/ChangeLog.1 \
+  gnulib-local/ChangeLog.0
+
 EXTRA_DIST = \
-  version.sh DEPENDENCIES PACKAGING HACKING ChangeLog.0 autogen.sh \
-  build-aux/ac-help.sed build-aux/fixaclocal build-aux/moopp \
+  $(changelog_etc) DEPENDENCIES PACKAGING HACKING ChangeLog.0 autogen.sh \
+  build-aux/ac-help.sed build-aux/moopp build-aux/git-version-gen \
   m4/fixautomake.m4 m4/woe32-dll.m4 \
   m4/libtool.m4
 
@@ -43,6 +71,7 @@ distcheck-hook:
 	cmp -s gettext-runtime/po/remove-potcdate.sin gettext-tools/po/remove-potcdate.sin
 	cmp -s gettext-runtime/po/remove-potcdate.sin gettext-tools/examples/po/remove-potcdate.sin
 	cmp -s gettext-runtime/m4/codeset.m4 gettext-tools/gnulib-m4/codeset.m4
+	cmp -s gettext-runtime/m4/extern-inline.m4 gettext-tools/gnulib-m4/extern-inline.m4
 	cmp -s gettext-runtime/m4/fcntl-o.m4 gettext-tools/gnulib-m4/fcntl-o.m4
 	cmp -s gettext-runtime/m4/gettext.m4 gettext-tools/gnulib-m4/gettext.m4
 	cmp -s gettext-runtime/m4/glibc2.m4 gettext-tools/gnulib-m4/glibc2.m4
@@ -118,3 +147,39 @@ EXTRA_DIST += os2/README.OS2 os2/Makefile os2/backward.def os2/configure.awk
 # Woe32 support.
 
 EXTRA_DIST += README.woe32 windows/windres-options windows/gettext.rc
+
+# Versioning based on Git release tags.
+
+EXTRA_DIST += $(top_srcdir)/.version
+BUILT_SOURCES = $(top_srcdir)/.version
+$(top_srcdir)/.version:
+	echo $(VERSION) > $@-t && mv $@-t $@
+dist-hook: gen-ChangeLogs
+	echo $(VERSION) > $(distdir)/.tarball-version
+
+# Generate ChangeLog.
+
+gen_start_date = 2015-10-13
+.PHONY: gen-ChangeLogs
+gen-ChangeLogs:
+	$(AM_V_GEN)if test -d .git; then				\
+	  log_fix="$(srcdir)/build-aux/git-log-fix";			\
+	  test -e "$$log_fix"						\
+	    && amend_git_log="--amend=$$log_fix"			\
+	    || amend_git_log=;						\
+	  for d in . gettext-runtime/intl gettext-runtime/po		\
+		gettext-tools/po; do					\
+	    test "$$d" = "."						\
+	      && cldir="$(distdir)"					\
+	      || cldir="$(distdir)/$$d";				\
+	    $(top_srcdir)/build-aux/gitlog-to-changelog			\
+	      $$amend_git_log --since=$(gen_start_date) -- "$$d"	\
+		> "$$cldir/cl-t" &&					\
+	    { rm -f "$$cldir/ChangeLog" &&				\
+	      mv "$$cldir/cl-t" "$$cldir/ChangeLog"; };			\
+	  done;								\
+	fi
+
+# PO files update.
+
+maintainer-update-po-local: $(top_builddir)/config.status

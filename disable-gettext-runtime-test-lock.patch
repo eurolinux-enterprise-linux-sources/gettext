@@ -1,0 +1,26 @@
+Index: gettext-0.19.7/gettext-runtime/tests/Makefile.am
+===================================================================
+--- gettext-0.19.7.orig/gettext-runtime/tests/Makefile.am
++++ gettext-0.19.7/gettext-runtime/tests/Makefile.am
+@@ -20,7 +20,7 @@
+ AUTOMAKE_OPTIONS = 1.11 gnits no-dependencies color-tests subdir-objects
+ EXTRA_DIST =
+ 
+-TESTS = test-lock
++TESTS =
+ 
+ AM_CPPFLAGS = \
+   -I.. \
+Index: gettext-0.19.7/gettext-runtime/tests/Makefile.in
+===================================================================
+--- gettext-0.19.7.orig/gettext-runtime/tests/Makefile.in
++++ gettext-0.19.7/gettext-runtime/tests/Makefile.in
+@@ -86,7 +86,7 @@ PRE_UNINSTALL = :
+ POST_UNINSTALL = :
+ build_triplet = @build@
+ host_triplet = @host@
+-TESTS = test-lock$(EXEEXT)
++TESTS =
+ check_PROGRAMS = test-lock$(EXEEXT)
+ subdir = tests
+ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
